@@ -9,17 +9,18 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
-
+from embeddings_aoss import AOSSEmbeddings
 
 from dotenv import load_dotenv
 load_dotenv()
 
+aoss_emb = AOSSEmbeddings()
 
 def title_setup() -> None:
     """
-    Setup the title, subtitle and information in the header
+    Set up the title, subtitle and information in the header
     """
-    st.title_setup(page_title="Documentation Chat", layout="wide")
+    st.set_page_config(page_title="Documentation Chat", layout="wide")
     st.title("Documentation Chat")
 
 
@@ -103,20 +104,19 @@ def main() -> None:
     if prompt := st.chat_input():
         st.chat_message("user").write(prompt)
         config = {"configurable": {"session_id": "any"}}
-        streaming_on = True
-        if streaming_on:
-            # Chain - Stream
-            placeholder = st.empty()
-            full_response = ''
-            for chunk in chain_with_history.stream({"question": prompt}, config):
-                full_response += chunk
-                placeholder.chat_message("ai").write(full_response)
+        emb_info = aoss_emb.query(question=prompt)
+        full_question = f"""Answer the following question:
+        {prompt}
+        You can use the following information as guide: 
+        {emb_info}
+        """
+        print(f"{'*'*20}\n{full_question}\n{'*'*20}")
+        placeholder = st.empty()
+        full_response = ''
+        for chunk in chain_with_history.stream({"question": prompt}, config):
+            full_response += chunk
             placeholder.chat_message("ai").write(full_response)
-
-        else:
-            # Chain - Invoke
-            response = chain_with_history.invoke({"question": prompt}, config)
-            st.chat_message("ai").write(response)
+        placeholder.chat_message("ai").write(full_response)
 
 
 if __name__ == "__main__":
