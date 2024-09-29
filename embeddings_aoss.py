@@ -3,6 +3,7 @@ import boto3
 import os
 
 from typing import List
+from collections import Counter
 from langchain_aws import BedrockEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from opensearchpy import RequestsHttpConnection, OpenSearch
@@ -89,25 +90,32 @@ class AOSSEmbeddings:
             bulk_size=3000
         )
 
-    def query(self, question: str = '') -> str:
-
-        question = "regions available?"
+    def query(self, question: str = '', k: int = 5):
         results = self.vector.similarity_search(
             question,
             vector_field="rag_vector",
             text_field="text",
             metadata_field="metadata",
-            k=10
+            k=k,
         )
 
         rr = [{"page_content": r.page_content, "metadata": r.metadata} for r in results]
         data = ""
+        meta_files = []
         for doc in rr:
+            data += f"""
+            {doc['page_content']}
+            """
+            meta_files.append(doc['metadata']['source'])
             print(doc['metadata'])
-            data += doc['page_content'] + "\n\n"
+
+        conteo = Counter(meta_files)
+        files_sorted = [elem for elem, _ in conteo.most_common()]
+        files_str = "\n\n\t\t•".join(map(str, files_sorted))
 
         print('#' * 20)
         print(data)
+        print(meta_files)
         print('#' * 20)
 
-        return data
+        return data, files_str
