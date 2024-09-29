@@ -72,6 +72,7 @@ def main() -> None:
     ]
 
     prompt = ChatPromptTemplate.from_messages(template)
+    prompt_emb = ChatPromptTemplate.from_template("Question: {question}")
 
     model = ChatBedrock(
         client=bedrock_runtime,
@@ -81,6 +82,7 @@ def main() -> None:
 
     # Chain with no History
     chain = prompt | model | StrOutputParser()
+    chain_emb = prompt_emb | model | StrOutputParser()
 
     # Streamlit Chat Message History
     history = StreamlitChatMessageHistory(key="chat_messages")
@@ -104,10 +106,17 @@ def main() -> None:
     if prompt := st.chat_input():
         st.chat_message("user").write(prompt)
         config = {"configurable": {"session_id": "any"}}
-        emb_info = aoss_emb.query(question=prompt)
+        emb_question = f"""
+        Summarize the following question in only the 3 to 5 most relevant words. 
+        Answer using only 3 to 5 words, do not add anything else.
+        Question: {prompt}
+        """
+        emb_abs = chain_emb.invoke({"question": emb_question}, config)
+        print(f"{'-'*20}\nEmb abstract: {emb_abs}\n{'-'*20}")
+        emb_info, metainfo = aoss_emb.query(question=emb_abs, k=10)
         full_question = f"""Answer the following question:
         {prompt}
-        You can use the following information as guide: 
+        You can use the following information as guide.
         {emb_info}
         """
         print(f"{'*'*20}\n{full_question}\n{'*'*20}")
@@ -116,6 +125,12 @@ def main() -> None:
         for chunk in chain_with_history.stream({"question": prompt}, config):
             full_response += chunk
             placeholder.chat_message("ai").write(full_response)
+
+        full_response = f"""
+        {full_response}\n\n\t\t**You can find more information in the following sources:**\n\n\t\t{metainfo}
+        """
+
+        print(full_response)
         placeholder.chat_message("ai").write(full_response)
 
 
