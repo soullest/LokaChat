@@ -2,6 +2,7 @@ import boto3
 import os
 import random
 import streamlit as st
+import csv
 
 from langchain_aws import ChatBedrock
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
@@ -31,7 +32,19 @@ def sidepanel_setup() -> None:
         st.write("History Logs")
 
 
-def bedrock_setup():
+def load_links() -> None:
+    if 'links_dict' not in st.session_state:
+        filename = 'links.csv'
+        st.session_state.links_dict = {}
+
+        with open(filename, mode='r') as file:
+            reader = csv.reader(file)
+
+            for row in reader:
+                st.session_state.links_dict[row[0]] = row[1]
+        print(st.session_state.links_dict)
+
+def bedrock_setup() -> None:
     if 'setup_ready' not in st.session_state:
         print('#$%&')
 
@@ -88,7 +101,6 @@ def bedrock_setup():
         st.session_state.setup_ready = 0
 
 
-
 def main() -> None:
     """
     This function will be reach as the start point to the chat
@@ -102,12 +114,14 @@ def main() -> None:
 
     bedrock_setup()
 
+    load_links()
+
     if not st.session_state.history.messages:
         st.session_state.history.add_user_message("Hello")
         st.session_state.history.add_ai_message("How may I assist you today?")
 
     for msg in st.session_state.history.messages[1:]:
-        st.chat_message(msg.type).write(msg.content)
+        st.chat_message(msg.type).write(msg.content, unsafe_allow_html=True)
 
     # Get the prompt from the user
     if prompt := st.chat_input():
@@ -120,7 +134,7 @@ def main() -> None:
         """
         emb_abs = st.session_state.chain_emb.invoke({"question": emb_question}, config)
         print(f"{'-'*20}\nEmb abstract: {emb_abs}\n{'-'*20}")
-        emb_info, metainfo = aoss_emb.query(question=emb_abs, k=10)
+        emb_info, metainfo = aoss_emb.query(question=emb_abs, k=10, links_dict=st.session_state.links_dict)
         full_question = f"""Answer the following question:
         {prompt}
         You can use the following information as guide.
@@ -134,11 +148,12 @@ def main() -> None:
             placeholder.chat_message("ai").write(full_response)
 
         full_response = f"""
-        {full_response}\n\n\t\t**You can find more information in the following sources:**\n\n\t\t{metainfo}
+        {full_response}\n\n**You can find more information in the following sources:**\n\n{metainfo}
         """
 
         print(full_response)
-        placeholder.chat_message("ai").write(full_response)
+        placeholder.chat_message("ai").write(full_response, unsafe_allow_html=True)
+        st.session_state.history.messages[-1].content = full_response
 
 
 if __name__ == "__main__":

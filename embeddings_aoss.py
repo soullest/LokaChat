@@ -90,7 +90,7 @@ class AOSSEmbeddings:
             bulk_size=3000
         )
 
-    def query(self, question: str = '', k: int = 5):
+    def query(self, question: str = '', k: int = 5, links_dict={}):
         results = self.vector.similarity_search(
             question,
             vector_field="rag_vector",
@@ -111,11 +111,15 @@ class AOSSEmbeddings:
 
         conteo = Counter(meta_files)
         files_sorted = [elem for elem, _ in conteo.most_common()]
-        files_str = "\n\n\t\t•".join(map(str, files_sorted))
+        files_html = ""
+        for f in files_sorted:
+            file_name = str(f).replace('./data\\', '')
+            files_html = f"""{files_html}<p><a href="{links_dict[file_name]}">{file_name}</a></p>"""
+        # files_str = "\n\n\t\t•".join(map(str, files_sorted))
 
         print('#' * 20)
         print(data)
         print(meta_files)
         print('#' * 20)
 
-        return data, files_str
+        return data, files_html
