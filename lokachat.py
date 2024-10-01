@@ -21,13 +21,59 @@ def title_setup() -> None:
     """
     Set up the title, subtitle and information in the header
     """
-    st.set_page_config(page_title="Documentation Chat", layout="wide")
-    st.title("Documentation Chat")
+    st.set_page_config(page_title="Documentation Chat")
+    st.markdown("""
+    <style>
+    .huge-font {
+        font-size:40px !important;
+    }
+    .huge-font-italic {
+        font-size:20px !important;
+        font-style: italic;
+    }
+    .big-font {
+        font-size:18px !important;
+    }
+
+    .big-font-italic {
+        font-size:15px !important;
+        font-style: italic;
+        text-align: center;
+    }
+
+    .disclaimer-font {
+        font-size:15px !important;
+        font-style: italic;
+        text-align: center;
+    }
+    .release-notes-font {
+        font-size:15px !important;
+        text-align: center;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    col1, mid, col2 = st.columns([4, 1, 20])
+    with col1:
+        st.image('media/loka_logo.jpg', width=100)
+    with col2:
+        st.markdown(
+            f'<p><span class="huge-font"><b>Document Chatbot</b></span> <span class="huge-font-italic">(Limited Support POC)</span></p>',
+            unsafe_allow_html=True)
+    subheader_text = "Hi! Welcome to Document Chatbot (powered by <a href='https://www.linkedin.com/in/dr-alberto-beltran/'>Soullest</a>)"
+    disclaimer_text = ''
+
+    st.markdown(f'<p class="big-font">{subheader_text}</p>', unsafe_allow_html=True)
 
 
 def sidepanel_setup() -> None:
     with st.sidebar:
         st.title('Example questions')
+        st.info("""
+        • What is SageMaker?\n
+        • What are all AWS regions where SageMaker is available?\n
+        • How to check if an endpoint is KMS encrypted?\n
+        • What are SageMaker Geospatial capabilities?\n
+        """)
         st.divider()
         st.write("History Logs")
 
