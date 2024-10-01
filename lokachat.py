@@ -75,7 +75,12 @@ def sidepanel_setup() -> None:
         • What are SageMaker Geospatial capabilities?\n
         """)
         st.divider()
-        st.write("History Logs")
+        st.title("Question history")
+        if 'history' in st.session_state:
+            with st.container():
+                for msg in st.session_state.history.messages[1:]:
+                    if msg.type == "human":
+                        st.write(f"• {msg.content}", unsafe_allow_html=True)
 
 
 def load_links() -> None:
@@ -167,40 +172,46 @@ def main() -> None:
         st.session_state.history.add_ai_message("How may I assist you today?")
 
     for msg in st.session_state.history.messages[1:]:
-        st.chat_message(msg.type).write(msg.content, unsafe_allow_html=True)
+        if msg.type == 'ai':
+            st.chat_message(msg.type, avatar='media/loka_logo.jpg').write(msg.content, unsafe_allow_html=True)
+        else:
+            st.chat_message(msg.type).write(msg.content, unsafe_allow_html=True)
 
     # Get the prompt from the user
     if prompt := st.chat_input():
+
         st.chat_message("user").write(prompt)
-        config = {"configurable": {"session_id": "any"}}
-        emb_question = f"""
-        Summarize the following question in only the 3 to 5 most relevant words. 
-        Answer using only 3 to 5 words, do not add anything else.
-        Question: {prompt}
-        """
-        emb_abs = st.session_state.chain_emb.invoke({"question": emb_question}, config)
-        print(f"{'-'*20}\nEmb abstract: {emb_abs}\n{'-'*20}")
-        emb_info, metainfo = aoss_emb.query(question=emb_abs, k=10, links_dict=st.session_state.links_dict)
-        full_question = f"""Answer the following question:
-        {prompt}
-        You can use the following information as guide.
-        {emb_info}
-        """
-        print(f"{'*'*20}\n{full_question}\n{'*'*20}")
-        placeholder = st.empty()
-        full_response = ''
+        with st.spinner('Thinking...'):
+            config = {"configurable": {"session_id": "any"}}
+            emb_question = f"""
+            Summarize the following question in only the 3 to 5 most relevant words. 
+            Answer using only 3 to 5 words, do not add anything else.
+            Question: {prompt}
+            """
+            emb_abs = st.session_state.chain_emb.invoke({"question": emb_question}, config)
+            print(f"{'-'*20}\nEmb abstract: {emb_abs}\n{'-'*20}")
+            emb_info, metainfo = aoss_emb.query(question=emb_abs, k=10, links_dict=st.session_state.links_dict)
+            full_question = f"""Answer the following question:
+            {prompt}
+            You can use the following information as guide.
+            {emb_info}
+            """
+            print(f"{'*'*20}\n{full_question}\n{'*'*20}")
+            placeholder = st.empty()
+            full_response = ''
         for chunk in st.session_state.chain_with_history.stream({"question": prompt}, config):
             full_response += chunk
-            placeholder.chat_message("ai").write(full_response)
+            placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response)
 
         full_response = f"""
         {full_response}\n\n**You can find more information in the following sources:**\n\n{metainfo}
         """
 
         print(full_response)
-        placeholder.chat_message("ai").write(full_response, unsafe_allow_html=True)
+        placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response, unsafe_allow_html=True)
         st.session_state.history.messages[-1].content = full_response
 
+        st.rerun()
 
 if __name__ == "__main__":
     main()
