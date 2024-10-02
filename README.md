@@ -3,12 +3,12 @@
 It is recommended to use python 3.10 or higher, as well as the virtual machine of your choice, after which you will only need to install the dependencies with the following command
 
 ```
-pip install -r requeriments.txt
+pip install -r requirements.txt
 ```
 Tras la instalación de las dependencias el sistema esta listo para correr en un ambiente local usando la siguiente instrucción:
 
 ```
-streamlit run .\lokachat.py
+streamlit run lokachat.py
 ```
 
 ## Project Description
