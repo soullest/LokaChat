@@ -168,7 +168,7 @@ def main() -> None:
     load_links()
 
     if not st.session_state.history.messages:
-        st.session_state.history.add_user_message("Hello")
+        st.session_state.history.add_user_message(os.environ["CONTEXT_PROMPT"])
         st.session_state.history.add_ai_message("How may I assist you today?")
 
     for msg in st.session_state.history.messages[1:]:
@@ -203,13 +203,18 @@ def main() -> None:
             full_response += chunk
             placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response)
 
-        full_response = f"""
-        {full_response}\n\n**You can find more information in the following sources:**\n\n{metainfo}
-        """
+        if "Sorry, this topic seems off topic for me" in full_response:
+            print(full_response)
+            placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response, unsafe_allow_html=True)
+        else:
+            full_response = f"""
+            {full_response}\n\n**You can find more information in the following sources:**\n\n{metainfo}
+            """
 
-        print(full_response)
-        placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response, unsafe_allow_html=True)
-        st.session_state.history.messages[-1].content = full_response
+            print(full_response)
+            placeholder.chat_message("ai", avatar='media/loka_logo.jpg').write(full_response, unsafe_allow_html=True)
+
+            st.session_state.history.messages[-1].content = full_response
 
         st.rerun()
 
